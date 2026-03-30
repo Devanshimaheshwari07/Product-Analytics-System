@@ -11,7 +11,7 @@ env:
   IMAGE_PREFIX: ${{ github.repository }}
 
 jobs:
-  # Lint & Test
+  # ─── Lint & Test ──────────────────────────────────────────────
   lint-and-test:
     runs-on: ubuntu-latest
     strategy:
@@ -48,7 +48,7 @@ jobs:
             echo "No tests directory found, skipping..."
           fi
 
-  # Build Docker Images 
+  # ─── Build Docker Images ──────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     needs: lint-and-test
@@ -94,7 +94,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Integration Test 
+  # ─── Integration Test ─────────────────────────────────────────
   integration-test:
     runs-on: ubuntu-latest
     needs: build
@@ -104,39 +104,127 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Start services
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          # Database Configuration
+          POSTGRES_USER=analytics_user
+          POSTGRES_PASSWORD=secure_password_change_me
+          POSTGRES_DB=product_analytics
+          POSTGRES_HOST=database
+          POSTGRES_PORT=5432
+          
+          # API Configuration
+          API_HOST=0.0.0.0
+          API_PORT=8000
+          API_ENV=development
+          
+          # Dashboard Configuration
+          DASHBOARD_HOST=0.0.0.0
+          DASHBOARD_PORT=8050
+          
+          # ETL Configuration
+          ETL_INTERVAL=300
+          EOF
+          cat .env
+
+      - name: Install curl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl
+
+      - name: Start services with docker compose
         run: |
           docker compose up -d --build
-          echo "Waiting for services to become healthy..."
-          sleep 30
+          echo "⏳ Waiting for services to become healthy..."
+          sleep 60
 
-      - name: Check service health
+      - name: Check service health with retry logic
         run: |
-          # API health
-          curl -f http://localhost:8000/health || exit 1
-          echo "✅ API is healthy"
+          MAX_RETRIES=15
+          RETRY_DELAY=5
+          
+          # Function to retry curl with exponential backoff
+          check_service() {
+            local url=$1
+            local name=$2
+            local retries=0
+            
+            while [ $retries -lt $MAX_RETRIES ]; do
+              if curl -sf "$url" > /dev/null 2>&1; then
+                echo "✅ $name is healthy"
+                return 0
+              fi
+              retries=$((retries + 1))
+              echo "⏳ $name not ready yet... (attempt $retries/$MAX_RETRIES)"
+              sleep $RETRY_DELAY
+            done
+            
+            echo "❌ $name failed health check"
+            return 1
+          }
+          
+          # Check API health
+          check_service "http://localhost:8000/health" "API" || exit 1
+          
+          # Check Dashboard
+          check_service "http://localhost:8050/" "Dashboard" || exit 1
+          
+          # Check API products endpoint
+          check_service "http://localhost:8000/api/v1/products" "Products endpoint" || exit 1
+          
+          # Check Analytics endpoint
+          check_service "http://localhost:8000/api/v1/analytics/overview" "Analytics endpoint" || exit 1
 
-          # Dashboard
-          curl -f http://localhost:8050/ || exit 1
-          echo "✅ Dashboard is accessible"
-
-          # Products endpoint
-          curl -f http://localhost:8000/api/v1/products || exit 1
-          echo "✅ Products endpoint working"
-
-          # Analytics endpoint
-          curl -f http://localhost:8000/api/v1/analytics/overview || exit 1
-          echo "✅ Analytics overview working"
+      - name: Display service status
+        if: always()
+        run: |
+          echo "🔍 Docker Compose Services Status:"
+          docker compose ps
 
       - name: Show service logs on failure
         if: failure()
-        run: docker compose logs
+        run: |
+          echo "📋 Database logs:"
+          docker compose logs database --tail 50
+          echo "📋 API logs:"
+          docker compose logs api --tail 50
+          echo "📋 Dashboard logs:"
+          docker compose logs dashboard --tail 50
+          echo "📋 ETL logs:"
+          docker compose logs etl --tail 50
 
-      - name: Teardown
+      - name: Run smoke tests
+        if: success()
+        run: |
+          echo "🧪 Running smoke tests..."
+          
+          # Test API responds with valid JSON
+          RESPONSE=$(curl -s http://localhost:8000/api/v1/products)
+          if echo "$RESPONSE" | grep -q "{"; then
+            echo "✅ API returns valid JSON"
+          else
+            echo "❌ API response is not valid JSON"
+            exit 1
+          fi
+          
+          # Check analytics endpoint returns data
+          ANALYTICS=$(curl -s http://localhost:8000/api/v1/analytics/overview)
+          if echo "$ANALYTICS" | grep -q "{"; then
+            echo "✅ Analytics endpoint returns valid JSON"
+          else
+            echo "❌ Analytics response is not valid JSON"
+            exit 1
+          fi
+
+      - name: Teardown services
         if: always()
-        run: docker compose down -v
+        run: |
+          echo "🧹 Tearing down services..."
+          docker compose down -v
+          docker compose ps || echo "All services stopped"
 
-  # Deploy (Production) 
+  # ─── Deploy (Production) ──────────────────────────────────────
   deploy:
     runs-on: ubuntu-latest
     needs: integration-test
@@ -150,7 +238,10 @@ jobs:
       - name: Deploy to production
         run: |
           echo "🚀 Deploying to production..."
-          # Example future steps:
-          # docker compose pull
-          # docker compose up -d
+          # Example future deployment steps:
+          # 1. SSH into production server
+          # 2. Pull latest Docker images from registry
+          # 3. Run: docker compose pull && docker compose up -d
+          # 4. Run health checks
+          # 5. Smoke tests
           echo "Deployment placeholder — configure for your infrastructure"
