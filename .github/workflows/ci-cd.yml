@@ -11,7 +11,7 @@ env:
   IMAGE_PREFIX: ${{ github.repository }}
 
 jobs:
-  # ─── Lint & Test ──────────────────────────────────────────────
+  # Lint & Test
   lint-and-test:
     runs-on: ubuntu-latest
     strategy:
@@ -48,7 +48,7 @@ jobs:
             echo "No tests directory found, skipping..."
           fi
 
-  # ─── Build Docker Images ─────────────────────────────────────
+  # Build Docker Images 
   build:
     runs-on: ubuntu-latest
     needs: lint-and-test
@@ -94,7 +94,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ─── Integration Test ────────────────────────────────────────
+  # Integration Test 
   integration-test:
     runs-on: ubuntu-latest
     needs: build
@@ -106,37 +106,37 @@ jobs:
 
       - name: Start services
         run: |
-          docker-compose up -d --build
+          docker compose up -d --build
           echo "Waiting for services to become healthy..."
           sleep 30
 
       - name: Check service health
         run: |
-          # Check API health
+          # API health
           curl -f http://localhost:8000/health || exit 1
           echo "✅ API is healthy"
 
-          # Check Dashboard
+          # Dashboard
           curl -f http://localhost:8050/ || exit 1
           echo "✅ Dashboard is accessible"
 
-          # Check API returns data
+          # Products endpoint
           curl -f http://localhost:8000/api/v1/products || exit 1
-          echo "✅ Products endpoint returns data"
+          echo "✅ Products endpoint working"
 
-          # Check Analytics endpoint
+          # Analytics endpoint
           curl -f http://localhost:8000/api/v1/analytics/overview || exit 1
-          echo "✅ Analytics overview returns data"
+          echo "✅ Analytics overview working"
 
       - name: Show service logs on failure
         if: failure()
-        run: docker-compose logs
+        run: docker compose logs
 
       - name: Teardown
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
 
-  # ─── Deploy (Production) ─────────────────────────────────────
+  # Deploy (Production) 
   deploy:
     runs-on: ubuntu-latest
     needs: integration-test
@@ -150,8 +150,7 @@ jobs:
       - name: Deploy to production
         run: |
           echo "🚀 Deploying to production..."
-          # Add your deployment commands here:
-          # - SSH into production server
-          # - Pull latest images
-          # - docker-compose up -d
+          # Example future steps:
+          # docker compose pull
+          # docker compose up -d
           echo "Deployment placeholder — configure for your infrastructure"
