@@ -3,7 +3,7 @@ version: '3.9'
 services:
 
   database:
-    image: postgres:15
+    build: ./database
     container_name: pa-database
     restart: unless-stopped
     env_file: .env
@@ -11,7 +11,6 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -21,28 +20,35 @@ services:
   api:
     build: ./api
     container_name: pa-api
+    restart: unless-stopped
     env_file: .env
     ports:
       - "8000:8000"
     depends_on:
-      - database
+      database:
+        condition: service_healthy
 
   etl:
     build: ./etl
     container_name: pa-etl
+    restart: unless-stopped
     env_file: .env
     depends_on:
-      - database
-      - api
+      database:
+        condition: service_healthy
+      api:
+        condition: service_started
 
   dashboard:
     build: ./dashboard
     container_name: pa-dashboard
+    restart: unless-stopped
     env_file: .env
     ports:
       - "8050:8050"
     depends_on:
-      - api
+      api:
+        condition: service_started
 
 volumes:
   pgdata:
