@@ -43,19 +43,31 @@ def create_kpi_card(label, value, change=None, color="blue", icon="📊"):
 
 def format_currency(value):
     """Format a number as USD currency."""
-    if value >= 1_000_000:
-        return f"${value / 1_000_000:,.1f}M"
-    elif value >= 1_000:
-        return f"${value / 1_000:,.1f}K"
-    else:
-        return f"${value:,.2f}"
+    if value is None:
+        return "$0.00"
+    try:
+        val = float(value)
+        if val >= 1_000_000:
+            return f"${val / 1_000_000:,.1f}M"
+        elif val >= 1_000:
+            return f"${val / 1_000:,.1f}K"
+        else:
+            return f"${val:,.2f}"
+    except (ValueError, TypeError):
+        return "$0.00"
 
 
 def format_number(value):
     """Format a large number with K/M suffix."""
-    if value >= 1_000_000:
-        return f"{value / 1_000_000:,.1f}M"
-    elif value >= 1_000:
-        return f"{value / 1_000:,.1f}K"
-    else:
-        return f"{value:,.0f}"
+    if value is None:
+        return "0"
+    try:
+        val = float(value)
+        if val >= 1_000_000:
+            return f"{val / 1_000_000:,.1f}M"
+        elif val >= 1_000:
+            return f"{val / 1_000:,.1f}K"
+        else:
+            return f"{val:,.0f}"
+    except (ValueError, TypeError):
+        return "0"

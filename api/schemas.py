@@ -165,3 +165,15 @@ class OverviewKPIs(BaseModel):
     avg_profit_margin: Decimal
     total_products: int
     active_regions: int
+
+
+class ChannelDistribution(BaseModel):
+    channel: str
+    revenue: Decimal
+    order_count: int
+
+
+class DiscountImpact(BaseModel):
+    discount_bin: str
+    avg_amount: Decimal
+    order_count: int

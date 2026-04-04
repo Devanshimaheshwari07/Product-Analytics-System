@@ -3,7 +3,7 @@ Analytics router — KPI endpoints, performance rankings, and trend data.
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import func, text, case
 from typing import Optional
 from datetime import date
 
@@ -13,7 +13,8 @@ from models import (
 )
 from schemas import (
     KPIResponse, ProductPerformance, RegionalPerformance,
-    CategoryPerformance, RevenueTrend, OverviewKPIs
+    CategoryPerformance, RevenueTrend, OverviewKPIs,
+    ChannelDistribution, DiscountImpact
 )
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["Analytics"])
@@ -250,3 +251,64 @@ def get_daily_metrics(
         .limit(limit)
         .all()
     )
+
+
+@router.get("/channel-distribution", response_model=list[ChannelDistribution])
+def get_channel_distribution(
+    product_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    """Get sales distribution by channel."""
+    query = db.query(
+        SalesTransaction.channel,
+        func.sum(SalesTransaction.total_amount).label("revenue"),
+        func.count(SalesTransaction.id).label("order_count")
+    )
+
+    if product_id:
+        query = query.filter(SalesTransaction.product_id == product_id)
+
+    results = query.group_by(SalesTransaction.channel).all()
+    return [
+        ChannelDistribution(
+            channel=r.channel,
+            revenue=r.revenue or 0,
+            order_count=r.order_count or 0
+        )
+        for r in results
+    ]
+
+
+@router.get("/discount-impact", response_model=list[DiscountImpact])
+def get_discount_impact(
+    product_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    """Get impact of discounts on order amount."""
+    discount_bin = case(
+        (SalesTransaction.discount_pct <= 0, '0%'),
+        (SalesTransaction.discount_pct <= 5, '1-5%'),
+        (SalesTransaction.discount_pct <= 10, '5-10%'),
+        (SalesTransaction.discount_pct <= 15, '10-15%'),
+        (SalesTransaction.discount_pct <= 20, '15-20%'),
+        else_='20%+'
+    ).label("discount_bin")
+    
+    query = db.query(
+        discount_bin,
+        func.avg(SalesTransaction.total_amount).label("avg_amount"),
+        func.count(SalesTransaction.id).label("order_count")
+    )
+
+    if product_id:
+        query = query.filter(SalesTransaction.product_id == product_id)
+
+    results = query.group_by(discount_bin).all()
+    return [
+        DiscountImpact(
+            discount_bin=r.discount_bin,
+            avg_amount=r.avg_amount or 0,
+            order_count=r.order_count or 0
+        )
+        for r in results
+    ]
