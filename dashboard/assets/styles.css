@@ -368,25 +368,28 @@ body::before {
     border-color: var(--accent-blue) !important;
 }
 
-/* ─── Scrollbar ─────────────────────────────────────────────── */
+/* ─── Enhanced Scrollbar ────────────────────────────────────── */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: rgba(17, 24, 39, 0.6);
+    border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
-    border-radius: 3px;
+    background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+    border-radius: 10px;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
+    background: linear-gradient(180deg, #2563eb, #7c3aed);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
 }
-
 /* ─── Responsive ────────────────────────────────────────────── */
 @media (max-width: 1024px) {
     .chart-grid {
