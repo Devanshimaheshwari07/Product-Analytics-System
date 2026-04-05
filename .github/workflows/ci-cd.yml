@@ -136,13 +136,15 @@ jobs:
       - name: Start services with docker compose
         run: |
           docker compose up -d --build
-          echo "⏳ Waiting for services to become healthy..."
-          sleep 60
+          echo "⏳ Waiting for services to become healthy (init.sql can take 2-3 min)..."
+          sleep 90
+          echo "🔍 Service states after initial wait:"
+          docker compose ps
 
       - name: Check service health with retry logic
         run: |
-          MAX_RETRIES=15
-          RETRY_DELAY=5
+          MAX_RETRIES=20
+          RETRY_DELAY=10
           
           # Function to retry curl with exponential backoff
           check_service() {
