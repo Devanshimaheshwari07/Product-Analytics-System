@@ -106,27 +106,20 @@ jobs:
 
       - name: Create .env file
         run: |
-          cat > .env << EOF
-          # Database Configuration
-          POSTGRES_USER=analytics_user
-          POSTGRES_PASSWORD=secure_password_change_me
-          POSTGRES_DB=product_analytics
-          POSTGRES_HOST=database
-          POSTGRES_PORT=5432
-          
-          # API Configuration
-          API_HOST=0.0.0.0
-          API_PORT=8000
-          API_ENV=development
-          
-          # Dashboard Configuration
-          DASHBOARD_HOST=0.0.0.0
-          DASHBOARD_PORT=8050
-          
-          # ETL Configuration
-          ETL_INTERVAL=300
-          EOF
-          cat .env
+          printf '%s\n' \
+            'POSTGRES_USER=analytics_user' \
+            'POSTGRES_PASSWORD=secure_password_change_me' \
+            'POSTGRES_DB=product_analytics' \
+            'POSTGRES_HOST=database' \
+            'POSTGRES_PORT=5432' \
+            'API_HOST=0.0.0.0' \
+            'API_PORT=8000' \
+            'API_ENV=development' \
+            'DASHBOARD_HOST=0.0.0.0' \
+            'DASHBOARD_PORT=8050' \
+            'ETL_INTERVAL=300' \
+            > .env
+          echo "=== .env contents ===" && cat .env
 
       - name: Install curl
         run: |
