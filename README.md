@@ -40,7 +40,7 @@ Enterprise-grade analytics system for product performance monitoring, integratin
 | **REST API** | FastAPI + SQLAlchemy | Backend data access layer |
 | **ETL Pipeline** | Python + Pandas + APScheduler | Data transformation & scheduling |
 | **Web Dashboard** | Plotly Dash | Interactive visualizations |
-| **BI Integration** | Power BI Desktop | Enterprise reporting |
+| **BI Integration** | Power BI Desktop | Further Enterprise reporting |
 | **Containerization** | Docker Compose | Service orchestration |
 | **CI/CD** | GitHub Actions | Automated build & deploy |
 
@@ -152,12 +152,6 @@ product-analytics/
 - Channel analysis and discount impact views
 - Auto-refresh every 60 seconds
 
-### Power BI Integration
-- Connection guide for PostgreSQL and REST API
-- 25+ ready-to-use DAX measures
-- Recommended star schema data model
-
----
 
 ## API Examples
 
